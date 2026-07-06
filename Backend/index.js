@@ -102,10 +102,16 @@ const seedAdmin = async () => {
  
 app.use(errorHandler);
 
-// Start Server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
-
+// Seed admin on startup
 seedAdmin();
+
+// Export for Vercel serverless functions
+module.exports = app;
+
+// Start server locally (when not on Vercel)
+if (!process.env.VERCEL) {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
+}
