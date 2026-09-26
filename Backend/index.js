@@ -53,8 +53,18 @@ app.use(passport.initialize());
 // 3. Static Folder
 app.use("/uploads", express.static("uploads"));
 
-// Connect to MongoDB
-connectDB();
+const ensureDatabaseConnection = async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    res.status(503).json({
+      message: "Database is temporarily unavailable. Please try again shortly.",
+    });
+  }
+};
+
+app.use("/api", ensureDatabaseConnection);
 
 // Test Route
 app.get("/", (req, res) => {
@@ -102,13 +112,11 @@ const seedAdmin = async () => {
  
 app.use(errorHandler);
 
-// Seed admin on startup
-seedAdmin();
-
 // Export for Vercel serverless functions
 module.exports = app;
 
-// Start server locally (when not on Vercel)
+// Seed admin after the initial database connection
+connectDB().then(seedAdmin).catch(() => {});
 if (!process.env.VERCEL) {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {

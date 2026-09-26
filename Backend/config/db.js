@@ -2,18 +2,35 @@
 const mongoose = require("mongoose");
 const logger = require("./loggerConfig");
 
+let connectionPromise = null;
+
 const connectDB = async () => {
-  try {
-    mongoose.set("strictQuery", false);
-
-    const conn = await mongoose.connect(process.env.MONGO_URI); 
-
-    logger.info(`📌 MongoDB Connected: ${conn.connection.host}`);
-  } catch (error) {
-    logger.error(`❌ MongoDB Connection Error: ${error.message}`);
-    logger.error("🔁 Retrying connection in 5 seconds...");
-    setTimeout(connectDB, 5000);
+  if (mongoose.connection.readyState === 1) {
+    return mongoose.connection;
   }
+
+  if (connectionPromise) {
+    return connectionPromise;
+  }
+
+  if (!process.env.MONGO_URI) {
+    throw new Error("MONGO_URI is not configured");
+  }
+
+  connectionPromise = mongoose.connect(process.env.MONGO_URI, {
+    serverSelectionTimeoutMS: 5000,
+  })
+    .then((conn) => {
+      logger.info(`📌 MongoDB Connected: ${conn.connection.host}`);
+      return conn.connection;
+    })
+    .catch((error) => {
+      connectionPromise = null;
+      logger.error(`❌ MongoDB Connection Error: ${error.message}`);
+      throw error;
+    });
+
+  return connectionPromise;
 };
 
 // Log mongoose connection events
@@ -26,6 +43,7 @@ mongoose.connection.on("error", (err) => {
 });
 
 mongoose.connection.on("disconnected", () => {
+  connectionPromise = null;
   logger.warn("⚠️ Mongoose disconnected");
 });
 
