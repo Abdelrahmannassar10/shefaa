@@ -55,9 +55,13 @@ app.use("/uploads", express.static("uploads"));
 
 const ensureDatabaseConnection = async (req, res, next) => {
   try {
-    await connectDB();
+    const connection = await connectDB();
+    if (connection.readyState !== 1) {
+      throw new Error("MongoDB connection is not ready");
+    }
     next();
   } catch (error) {
+    console.error(`Database unavailable: ${error.message}`);
     res.status(503).json({
       message: "Database is temporarily unavailable. Please try again shortly.",
     });

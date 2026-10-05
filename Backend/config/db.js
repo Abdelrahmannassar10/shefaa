@@ -4,6 +4,10 @@ const logger = require("./loggerConfig");
 
 let connectionPromise = null;
 
+// Requests are guarded by connectDB before accessing models. Buffering would
+// otherwise hide a lost connection and turn it into a misleading 10s timeout.
+mongoose.set("bufferCommands", false);
+
 const connectDB = async () => {
   if (mongoose.connection.readyState === 1) {
     return mongoose.connection;
@@ -19,6 +23,7 @@ const connectDB = async () => {
 
   connectionPromise = mongoose.connect(process.env.MONGO_URI, {
     serverSelectionTimeoutMS: 5000,
+    connectTimeoutMS: 5000,
   })
     .then((conn) => {
       logger.info(`📌 MongoDB Connected: ${conn.connection.host}`);
