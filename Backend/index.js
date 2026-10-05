@@ -77,6 +77,8 @@ app.get("/", (req, res) => {
 
 // ---  4. Routes Mapping ---
 app.use("/api/auth", authRoutes); 
+// Keep the non-prefixed path compatible with existing clients.
+app.use("/auth", authRoutes);
 app.use("/api/patient", patientRoutes); 
 app.use("/api/doctor", doctorRoutes); 
 app.use("/api/pharmacy", pharmacyRoutes); 
